@@ -1,0 +1,16 @@
+# Ignorar arquivos maiores e redundantes
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.qgz
+
+# Arquivos intermediários
+*.bak
+*.tmp
+
+# Diretórios com dados processados grandes
+data/processed/
+data/project_data/

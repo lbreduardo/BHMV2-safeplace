@@ -1,0 +1,168 @@
+Listagem de caminhos de pasta para o volume OS
+O número de série do volume é 60DF-6043
+C:.
+¦   estrutura_projeto.txt
+¦   index.html
+¦   README.md
+¦   
++---css
+¦   ¦   fontawesome-all.min.css
+¦   ¦   L.Control.Layers.Tree.css
+¦   ¦   leaflet-measure.css
+¦   ¦   leaflet.css
+¦   ¦   leaflet.photon.css
+¦   ¦   MarkerCluster.css
+¦   ¦   MarkerCluster.Default.css
+¦   ¦   qgis2web.css
+¦   ¦   
+¦   +---images
+¦           cancel.png
+¦           cancel_@2X.png
+¦           check.png
+¦           check_@2X.png
+¦           focus.png
+¦           focus_@2X.png
+¦           layers-2x.png
+¦           layers.png
+¦           marker-icon-2x.png
+¦           marker-icon.png
+¦           marker-shadow.png
+¦           measure-control.png
+¦           rulers.png
+¦           rulers_@2X.png
+¦           start.png
+¦           start_@2X.png
+¦           throbber.gif
+¦           trash.png
+¦           trash_@2X.png
+¦           
++---data
+¦       comprehensive_heritage_risk_4.js
+¦       municipalities_1_simplified_1.js
+¦       municipalities_with_combined_risk_simplified_2.js
+¦       snisb_dam_buffers_3.js
+¦       
++---docs
+¦   ¦   .nojekyll
+¦   ¦   index.html
+¦   ¦   NotaMetodologica.md
+¦   ¦   README.md
+¦   ¦   
+¦   +---css
+¦   ¦   ¦   fontawesome-all.min.css
+¦   ¦   ¦   L.Control.Layers.Tree.css
+¦   ¦   ¦   leaflet-measure.css
+¦   ¦   ¦   leaflet.css
+¦   ¦   ¦   leaflet.photon.css
+¦   ¦   ¦   MarkerCluster.css
+¦   ¦   ¦   MarkerCluster.Default.css
+¦   ¦   ¦   qgis2web.css
+¦   ¦   ¦   
+¦   ¦   +---images
+¦   ¦           cancel.png
+¦   ¦           cancel_@2X.png
+¦   ¦           check.png
+¦   ¦           check_@2X.png
+¦   ¦           focus.png
+¦   ¦           focus_@2X.png
+¦   ¦           layers-2x.png
+¦   ¦           layers.png
+¦   ¦           marker-icon-2x.png
+¦   ¦           marker-icon.png
+¦   ¦           marker-shadow.png
+¦   ¦           measure-control.png
+¦   ¦           rulers.png
+¦   ¦           rulers_@2X.png
+¦   ¦           start.png
+¦   ¦           start_@2X.png
+¦   ¦           throbber.gif
+¦   ¦           trash.png
+¦   ¦           trash_@2X.png
+¦   ¦           
+¦   +---data
+¦   ¦       comprehensive_heritage_risk_4.js
+¦   ¦       convert_geojson2js.py
+¦   ¦       extract_geojson.py
+¦   ¦       municipalities_1_simplified_1.js
+¦   ¦       municipalities_with_combined_risk_simplified_2.geojson
+¦   ¦       municipalities_with_combined_risk_simplified_2.js
+¦   ¦       municipalities_with_combined_risk_simplified_3
+¦   ¦       municipalities_with_heritage_heat.geojson
+¦   ¦       municipalities_with_heritage_heat.js
+¦   ¦       municipalities_with_heritage_heat.qmd
+¦   ¦       snisb_dam_buffers_3.js
+¦   ¦       
+¦   +---js
+¦   ¦       Autolinker.min.js
+¦   ¦       L.Control.Layers.Tree.min.js
+¦   ¦       labelgun.min.js
+¦   ¦       labels.js
+¦   ¦       leaflet-hash.js
+¦   ¦       leaflet-heat.js
+¦   ¦       leaflet-measure.js
+¦   ¦       leaflet-svg-shape-markers.min.js
+¦   ¦       leaflet-tilelayer-wmts.js
+¦   ¦       leaflet.js
+¦   ¦       leaflet.js.map
+¦   ¦       leaflet.markercluster.js
+¦   ¦       leaflet.pattern.js
+¦   ¦       leaflet.photon.js
+¦   ¦       leaflet.rotatedMarker.js
+¦   ¦       Leaflet.VectorGrid.js
+¦   ¦       leaflet.wms.js
+¦   ¦       multi-style-layer.js
+¦   ¦       OSMBuildings-Leaflet.js
+¦   ¦       qgis2web_expressions.js
+¦   ¦       rbush.min.js
+¦   ¦       
+¦   +---legend
+¦   ¦       comprehensive_heritage_risk_4_2.png
+¦   ¦       comprehensive_heritage_risk_4_BemImóvel0.png
+¦   ¦       comprehensive_heritage_risk_4_BemMóvelouIntegrado1.png
+¦   ¦       municipalities_1_simplified_1.png
+¦   ¦       municipalities_with_combined_risk_simplified_2_000.png
+¦   ¦       municipalities_with_combined_risk_simplified_2_00721.png
+¦   ¦       municipalities_with_combined_risk_simplified_2_072152.png
+¦   ¦       snisb_dam_buffers_3.png
+¦   ¦       
+¦   +---webfonts
+¦           fa-solid-900.ttf
+¦           fa-solid-900.woff2
+¦           
++---js
+¦       Autolinker.min.js
+¦       L.Control.Layers.Tree.min.js
+¦       labelgun.min.js
+¦       labels.js
+¦       leaflet-hash.js
+¦       leaflet-heat.js
+¦       leaflet-measure.js
+¦       leaflet-svg-shape-markers.min.js
+¦       leaflet-tilelayer-wmts.js
+¦       leaflet.js
+¦       leaflet.js.map
+¦       leaflet.markercluster.js
+¦       leaflet.pattern.js
+¦       leaflet.photon.js
+¦       leaflet.rotatedMarker.js
+¦       Leaflet.VectorGrid.js
+¦       leaflet.wms.js
+¦       multi-style-layer.js
+¦       OSMBuildings-Leaflet.js
+¦       qgis2web_expressions.js
+¦       rbush.min.js
+¦       
++---legend
+¦       comprehensive_heritage_risk_4_2.png
+¦       comprehensive_heritage_risk_4_BemImóvel0.png
+¦       comprehensive_heritage_risk_4_BemMóvelouIntegrado1.png
+¦       municipalities_1_simplified_1.png
+¦       municipalities_with_combined_risk_simplified_2_000.png
+¦       municipalities_with_combined_risk_simplified_2_00721.png
+¦       municipalities_with_combined_risk_simplified_2_072152.png
+¦       snisb_dam_buffers_3.png
+¦       
++---webfonts
+        fa-solid-900.ttf
+        fa-solid-900.woff2
+        
