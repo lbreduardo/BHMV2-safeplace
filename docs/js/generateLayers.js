@@ -8,6 +8,7 @@ function generateDamBuffers(map, bounds_group) {
     dataVar: 'json_snisb_dam_buffers_3',
     layerName: 'layer_snisb_dam_buffers_3',
     pane: 'pane_snisb_dam_buffers_3',
+    onEachFeature: pop_snisb_dam_buffers_3,
     style: style_snisb_dam_buffers_3_0,
   });
   bounds_group.addLayer(layer_snisb_dam_buffers_3);
@@ -70,7 +71,6 @@ function generateHeritageRisk(map, bounds_group) {
       return L.shapeMarker(latlng, style_comprehensive_heritage_risk_4_0(feature));
     },
   });
-  console.log(layer_comprehensive_heritage_risk_4)
   bounds_group.addLayer(layer_comprehensive_heritage_risk_4);
   map.addLayer(layer_comprehensive_heritage_risk_4);
   allLayers.heritage = layer_comprehensive_heritage_risk_4;

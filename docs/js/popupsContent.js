@@ -230,3 +230,52 @@ function pop_municipalities_with_combined_risk_simplified_2(feature, layer) {
   });
   layer.bindPopup(content, { maxHeight: 400 });
 }
+
+function pop_snisb_dam_buffers_3(feature, layer) {
+  layer.on({
+    mouseout: function(e) {
+      if (typeof layer.closePopup == 'function') {
+        layer.closePopup();
+      } else {
+        layer.eachLayer(function(feature){
+          feature.closePopup()
+        });
+      }
+    },
+    mouseover: highlightFeature,
+  });
+  var popupContent = '<table>\
+    <tr>\
+    <td colspan="2" class="heritage-title"><strong>' + (feature.properties['dam_name'] !== null ? autolinker.link(String(feature.properties['dam_name']).replace(/'/g, '\'').toLocaleString()) : '') + '</strong></td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Estado</th>\
+    <td>' + (feature.properties['state'] !== null ? autolinker.link(String(feature.properties['state']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Município</th>\
+    <td>' + (feature.properties['municipality'] !== null ? autolinker.link(String(feature.properties['municipality']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Finalidade</th>\
+    <td>' + (feature.properties['purpose'] !== null ? autolinker.link(String(feature.properties['purpose']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Categoria de Risco</th>\
+    <td class="risk-score">' + (feature.properties['risk_category'] !== null ? autolinker.link(String(feature.properties['risk_category']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Potencial de Dano</th>\
+    <td class="risk-score">' + (feature.properties['damage_potential'] !== null ? autolinker.link(String(feature.properties['damage_potential']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    <tr>\
+    <th scope="row">Risco ao Bem Cultural</th>\
+    <td class="risk-score">' + (feature.properties['heritage_risk_potential'] !== null ? autolinker.link(String(feature.properties['heritage_risk_potential']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+    </tr>\
+    </table>';
+  var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+  layer.on('popupopen', function(e) {
+    addClassToPopupIfMedia(content, e.popup);
+  });
+  layer.bindPopup(content, { maxHeight: 400 });
+}
