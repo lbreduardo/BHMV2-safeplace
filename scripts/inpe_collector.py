@@ -7,7 +7,6 @@ Focuses exclusively on the client-specified endpoint for fire risk forecasts
 """
 
 import os
-import csv
 import json
 import requests
 import pandas as pd
@@ -18,11 +17,8 @@ from datetime import datetime, timedelta
 from shapely.geometry import Point
 import rasterio
 from rasterio.mask import mask
-import tempfile
-import re
-import time
 from bs4 import BeautifulSoup
-import urllib.parse
+from tqdm import tqdm
 
 
 class INPEFireCollector:
@@ -34,46 +30,48 @@ class INPEFireCollector:
         self.logger = self._setup_logger()
 
         # Set up base directory structure
-        self.base_dir = base_dir if base_dir else os.path.join(os.getcwd(), "project_data")
+        self.base_dir = (
+            base_dir if base_dir else os.path.join(os.getcwd(), "project_data")
+        )
         self.dirs = self._setup_directories()
 
         # Define Brazil's boundaries for strict validation
         self.brazil_bounds = {
-            'north': 5.27,  # Northern extent
-            'south': -33.75,  # Southern extent
-            'east': -34.79,  # Eastern extent
-            'west': -73.98  # Western extent
+            "north": 5.27,  # Northern extent
+            "south": -33.75,  # Southern extent
+            "east": -34.79,  # Eastern extent
+            "west": -73.98,  # Western extent
         }
 
         # State codes and names
         self.states = {
-            'AC': 'Acre',
-            'AL': 'Alagoas',
-            'AM': 'Amazonas',
-            'AP': 'Amapá',
-            'BA': 'Bahia',
-            'CE': 'Ceará',
-            'DF': 'Distrito Federal',
-            'ES': 'Espírito Santo',
-            'GO': 'Goiás',
-            'MA': 'Maranhão',
-            'MG': 'Minas Gerais',
-            'MS': 'Mato Grosso do Sul',
-            'MT': 'Mato Grosso',
-            'PA': 'Pará',
-            'PB': 'Paraíba',
-            'PE': 'Pernambuco',
-            'PI': 'Piauí',
-            'PR': 'Paraná',
-            'RJ': 'Rio de Janeiro',
-            'RN': 'Rio Grande do Norte',
-            'RO': 'Rondônia',
-            'RR': 'Roraima',
-            'RS': 'Rio Grande do Sul',
-            'SC': 'Santa Catarina',
-            'SE': 'Sergipe',
-            'SP': 'São Paulo',
-            'TO': 'Tocantins'
+            "AC": "Acre",
+            "AL": "Alagoas",
+            "AM": "Amazonas",
+            "AP": "Amapá",
+            "BA": "Bahia",
+            "CE": "Ceará",
+            "DF": "Distrito Federal",
+            "ES": "Espírito Santo",
+            "GO": "Goiás",
+            "MA": "Maranhão",
+            "MG": "Minas Gerais",
+            "MS": "Mato Grosso do Sul",
+            "MT": "Mato Grosso",
+            "PA": "Pará",
+            "PB": "Paraíba",
+            "PE": "Pernambuco",
+            "PI": "Piauí",
+            "PR": "Paraná",
+            "RJ": "Rio de Janeiro",
+            "RN": "Rio Grande do Norte",
+            "RO": "Rondônia",
+            "RR": "Roraima",
+            "RS": "Rio Grande do Sul",
+            "SC": "Santa Catarina",
+            "SE": "Sergipe",
+            "SP": "São Paulo",
+            "TO": "Tocantins",
         }
 
         # Client-specified endpoint (focusing ONLY on this as requested)
@@ -84,7 +82,7 @@ class INPEFireCollector:
 
     def _setup_logger(self):
         """Set up the logger"""
-        logger = logging.getLogger('inpe_collector')
+        logger = logging.getLogger("inpe_collector")
         logger.setLevel(logging.INFO)
 
         # Create console handler
@@ -92,7 +90,7 @@ class INPEFireCollector:
         ch.setLevel(logging.INFO)
 
         # Create formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
 
         # Add handler to logger
@@ -103,33 +101,33 @@ class INPEFireCollector:
     def _setup_directories(self):
         """Create necessary directories for data storage"""
         dirs = {
-            'base': self.base_dir,
-            'inpe': os.path.join(self.base_dir, "inpe_data"),
-            'geojson': None,
-            'processed': None,
-            'cache': None,
-            'summaries': None,
-            'tif': None
+            "base": self.base_dir,
+            "inpe": os.path.join(self.base_dir, "inpe_data"),
+            "geojson": None,
+            "processed": None,
+            "cache": None,
+            "summaries": None,
+            "tif": None,
         }
 
         # Create INPE data directory
-        os.makedirs(dirs['inpe'], exist_ok=True)
+        os.makedirs(dirs["inpe"], exist_ok=True)
 
         # Create subdirectories
-        dirs['geojson'] = os.path.join(dirs['inpe'], "geojson")
-        os.makedirs(dirs['geojson'], exist_ok=True)
+        dirs["geojson"] = os.path.join(dirs["inpe"], "geojson")
+        os.makedirs(dirs["geojson"], exist_ok=True)
 
-        dirs['processed'] = os.path.join(dirs['inpe'], "processed")
-        os.makedirs(dirs['processed'], exist_ok=True)
+        dirs["processed"] = os.path.join(dirs["inpe"], "processed")
+        os.makedirs(dirs["processed"], exist_ok=True)
 
-        dirs['cache'] = os.path.join(dirs['inpe'], "cache")
-        os.makedirs(dirs['cache'], exist_ok=True)
+        dirs["cache"] = os.path.join(dirs["inpe"], "cache")
+        os.makedirs(dirs["cache"], exist_ok=True)
 
-        dirs['summaries'] = os.path.join(dirs['inpe'], "summaries")
-        os.makedirs(dirs['summaries'], exist_ok=True)
+        dirs["summaries"] = os.path.join(dirs["inpe"], "summaries")
+        os.makedirs(dirs["summaries"], exist_ok=True)
 
-        dirs['tif'] = os.path.join(dirs['inpe'], "tif")
-        os.makedirs(dirs['tif'], exist_ok=True)
+        dirs["tif"] = os.path.join(dirs["inpe"], "tif")
+        os.makedirs(dirs["tif"], exist_ok=True)
 
         return dirs
 
@@ -143,7 +141,9 @@ class INPEFireCollector:
 
             if not tif_files:
                 # If no TIF files could be retrieved, fall back to test data
-                self.logger.warning("Could not retrieve TIF files, falling back to test data")
+                self.logger.warning(
+                    "Could not retrieve TIF files, falling back to test data"
+                )
                 points_df = self.generate_test_data()
                 self.is_using_test_data = True
             else:
@@ -155,7 +155,9 @@ class INPEFireCollector:
             cleaned_df = self.clean_data(points_df)
 
             if cleaned_df is None or len(cleaned_df) == 0:
-                self.logger.warning("No valid data after cleaning, falling back to test data")
+                self.logger.warning(
+                    "No valid data after cleaning, falling back to test data"
+                )
                 cleaned_df = self.generate_test_data()
                 self.is_using_test_data = True
 
@@ -163,7 +165,9 @@ class INPEFireCollector:
             gdf = self.create_geodataframe(cleaned_df)
 
             if gdf is None or len(gdf) == 0:
-                self.logger.warning("Failed to create valid GeoDataFrame, falling back to test data")
+                self.logger.warning(
+                    "Failed to create valid GeoDataFrame, falling back to test data"
+                )
                 test_df = self.generate_test_data()
                 gdf = self.create_geodataframe(test_df)
                 self.is_using_test_data = True
@@ -176,10 +180,10 @@ class INPEFireCollector:
 
             # Return results
             return {
-                'success': True,
-                'geodataframe': gdf,
-                'summary': summary,
-                'is_test_data': self.is_using_test_data
+                "success": True,
+                "geodataframe": gdf,
+                "summary": summary,
+                "is_test_data": self.is_using_test_data,
             }
 
         except Exception as e:
@@ -197,10 +201,10 @@ class INPEFireCollector:
             summary = self.create_summary(gdf)
 
             return {
-                'success': True,  # Still return success since we have fallback data
-                'geodataframe': gdf,
-                'summary': summary,
-                'is_test_data': True
+                "success": True,  # Still return success since we have fallback data
+                "geodataframe": gdf,
+                "summary": summary,
+                "is_test_data": True,
             }
 
     def get_latest_risk_files(self, days=1):
@@ -215,12 +219,14 @@ class INPEFireCollector:
             # Get the directory listing from the URL
             response = requests.get(self.fire_risk_url, timeout=30)
             if response.status_code != 200:
-                self.logger.warning(f"Failed to access {self.fire_risk_url}, status code: {response.status_code}")
+                self.logger.warning(
+                    f"Failed to access {self.fire_risk_url}, status code: {response.status_code}"
+                )
                 return downloaded_files
 
             # Parse the HTML to find TIF files
-            soup = BeautifulSoup(response.text, 'html.parser')
-            links = soup.find_all('a')
+            soup = BeautifulSoup(response.text, "html.parser")
+            links = soup.find_all("a")
 
             # Get dates to check
             today = datetime.now().date()
@@ -232,8 +238,8 @@ class INPEFireCollector:
             # Find TIF files matching the dates
             tif_files = []
             for link in links:
-                href = link.get('href', '')
-                if href.endswith('.tif') and any(date in href for date in date_strings):
+                href = link.get("href", "")
+                if href.endswith(".tif"):
                     tif_files.append(href)
 
             if not tif_files:
@@ -243,18 +249,20 @@ class INPEFireCollector:
             # Download the files
             for tif_file in tif_files:
                 file_url = f"{self.fire_risk_url.rstrip('/')}/{tif_file}"
-                output_path = os.path.join(self.dirs['tif'], tif_file)
+                output_path = os.path.join(self.dirs["tif"], tif_file)
 
                 self.logger.info(f"Downloading {file_url} to {output_path}")
 
                 file_response = requests.get(file_url, timeout=60)
                 if file_response.status_code == 200:
-                    with open(output_path, 'wb') as f:
+                    with open(output_path, "wb") as f:
                         f.write(file_response.content)
                     downloaded_files.append(output_path)
                     self.logger.info(f"Successfully downloaded {tif_file}")
                 else:
-                    self.logger.warning(f"Failed to download {tif_file}, status code: {file_response.status_code}")
+                    self.logger.warning(
+                        f"Failed to download {tif_file}, status code: {file_response.status_code}"
+                    )
 
             return downloaded_files
 
@@ -278,15 +286,19 @@ class INPEFireCollector:
 
         try:
             # Load Brazil state boundaries for spatial join
-            brazil_boundaries_path = os.path.join(self.base_dir, "BR_UF_2022.shp")
+            brazil_boundaries_path = os.path.join(self.base_dir, "BR_UF_2024.shp")
 
             if not os.path.exists(brazil_boundaries_path):
-                self.logger.warning(f"Brazil boundaries file not found at {brazil_boundaries_path}")
+                self.logger.warning(
+                    f"Brazil boundaries file not found at {brazil_boundaries_path}"
+                )
                 self.logger.info("Proceeding without state information")
                 brazil_gdf = None
             else:
                 brazil_gdf = gpd.read_file(brazil_boundaries_path)
-                self.logger.info(f"Loaded Brazil boundaries with {len(brazil_gdf)} states")
+                self.logger.info(
+                    f"Loaded Brazil boundaries with {len(brazil_gdf)} states"
+                )
 
             # Process each TIF file
             for tif_file in tif_files:
@@ -311,33 +323,37 @@ class INPEFireCollector:
 
                     # Define much stricter bounds for processing TIF files
                     ultra_strict_bounds = {
-                        'north': 4.5,  # Even tighter than before
-                        'south': -33.0,  # Even tighter than before
-                        'east': -35.5,  # Even tighter than before
-                        'west': -73.0  # Even tighter than before
+                        "north": 4.5,  # Even tighter than before
+                        "south": -33.0,  # Even tighter than before
+                        "east": -35.5,  # Even tighter than before
+                        "west": -73.0,  # Even tighter than before
                     }
 
                     # Add a buffer from borders
                     border_buffer = 0.2  # Degrees
 
                     # Create points for high risk areas
-                    for i in range(len(high_indices[0])):
+                    for i in tqdm(range(len(high_indices[0]))):
                         row, col = high_indices[0][i], high_indices[1][i]
                         # Convert pixel coordinates to geospatial coordinates
                         x, y = rasterio.transform.xy(transform, row, col)
 
                         # Ensure coordinates are well within Brazil's bounds with buffer
-                        if (ultra_strict_bounds['west'] + border_buffer <= x <= ultra_strict_bounds[
-                            'east'] - border_buffer and
-                                ultra_strict_bounds['south'] + border_buffer <= y <= ultra_strict_bounds[
-                                    'north'] - border_buffer):
+                        if (
+                            ultra_strict_bounds["west"] + border_buffer
+                            <= x
+                            <= ultra_strict_bounds["east"] - border_buffer
+                            and ultra_strict_bounds["south"] + border_buffer
+                            <= y
+                            <= ultra_strict_bounds["north"] - border_buffer
+                        ):
                             point = {
-                                'longitude': x,
-                                'latitude': y,
-                                'risk_level': 'high',
-                                'risk_value': float(data[row, col]),
-                                'data_hora': datetime.now().strftime('%Y-%m-%d'),
-                                'source_file': os.path.basename(tif_file)
+                                "longitude": x,
+                                "latitude": y,
+                                "risk_level": "high",
+                                "risk_value": float(data[row, col]),
+                                "data_hora": datetime.now().strftime("%Y-%m-%d"),
+                                "source_file": os.path.basename(tif_file),
                             }
                             all_points.append(point)
 
@@ -348,21 +364,27 @@ class INPEFireCollector:
                         x, y = rasterio.transform.xy(transform, row, col)
 
                         # Ensure coordinates are well within Brazil's bounds with buffer
-                        if (ultra_strict_bounds['west'] + border_buffer <= x <= ultra_strict_bounds[
-                            'east'] - border_buffer and
-                                ultra_strict_bounds['south'] + border_buffer <= y <= ultra_strict_bounds[
-                                    'north'] - border_buffer):
+                        if (
+                            ultra_strict_bounds["west"] + border_buffer
+                            <= x
+                            <= ultra_strict_bounds["east"] - border_buffer
+                            and ultra_strict_bounds["south"] + border_buffer
+                            <= y
+                            <= ultra_strict_bounds["north"] - border_buffer
+                        ):
                             point = {
-                                'longitude': x,
-                                'latitude': y,
-                                'risk_level': 'moderate',
-                                'risk_value': float(data[row, col]),
-                                'data_hora': datetime.now().strftime('%Y-%m-%d'),
-                                'source_file': os.path.basename(tif_file)
+                                "longitude": x,
+                                "latitude": y,
+                                "risk_level": "moderate",
+                                "risk_value": float(data[row, col]),
+                                "data_hora": datetime.now().strftime("%Y-%m-%d"),
+                                "source_file": os.path.basename(tif_file),
                             }
                             all_points.append(point)
 
-                self.logger.info(f"Extracted {len(all_points)} risk points from {os.path.basename(tif_file)}")
+                self.logger.info(
+                    f"Extracted {len(all_points)} risk points from {os.path.basename(tif_file)}"
+                )
 
             # Convert to DataFrame
             if all_points:
@@ -373,23 +395,27 @@ class INPEFireCollector:
                     self.logger.info("Adding state information to risk points")
 
                     # Create a temporary GeoDataFrame for spatial join
-                    geometry = [Point(xy) for xy in zip(df['longitude'], df['latitude'])]
+                    geometry = [
+                        Point(xy) for xy in zip(df["longitude"], df["latitude"])
+                    ]
                     temp_gdf = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
 
                     # Spatial join to get state information
-                    joined = gpd.sjoin(temp_gdf, brazil_gdf, how="left", predicate="within")
+                    joined = gpd.sjoin(
+                        temp_gdf, brazil_gdf, how="left", predicate="within"
+                    )
 
                     # Extract state code
-                    df['estado'] = joined['SIGLA_UF']
+                    df["estado"] = joined["SIGLA_UF"]
 
                     # Fill missing states with a default value
-                    df['estado'].fillna('Unknown', inplace=True)
+                    df["estado"].fillna("Unknown", inplace=True)
                 else:
                     # Assign unknown state if boundaries not available
-                    df['estado'] = 'Unknown'
+                    df["estado"] = "Unknown"
 
                 # Add collection time
-                df['collection_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                df["collection_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 return df
             else:
@@ -410,78 +436,77 @@ class INPEFireCollector:
         original_count = len(df)
 
         # Remove missing coordinates
-        df = df.dropna(subset=['latitude', 'longitude'])
+        df = df.dropna(subset=["latitude", "longitude"])
 
         # Convert to numeric and remove any non-numeric values
-        df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
-        df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
-        df = df.dropna(subset=['latitude', 'longitude'])
+        df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+        df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+        df = df.dropna(subset=["latitude", "longitude"])
 
         # EXTREME NUCLEAR-LEVEL Brazil boundary check with MEGA-tight bounds
         # Shrink the boundaries further to ensure no points near borders
         extreme_bounds = {
-            'north': 4.0,  # Even tighter than before
-            'south': -32.5,  # Even tighter than before
-            'east': -36.0,  # Even tighter than before
-            'west': -72.5  # Even tighter than before
+            "north": 4.0,  # Even tighter than before
+            "south": -32.5,  # Even tighter than before
+            "east": -36.0,  # Even tighter than before
+            "west": -72.5,  # Even tighter than before
         }
 
         # Apply extreme strict filtering
         df = df[
-            (df['latitude'] >= extreme_bounds['south']) &
-            (df['latitude'] <= extreme_bounds['north']) &
-            (df['longitude'] >= extreme_bounds['west']) &
-            (df['longitude'] <= extreme_bounds['east'])
-            ]
+            (df["latitude"] >= extreme_bounds["south"])
+            & (df["latitude"] <= extreme_bounds["north"])
+            & (df["longitude"] >= extreme_bounds["west"])
+            & (df["longitude"] <= extreme_bounds["east"])
+        ]
 
         # Add a MASSIVE buffer from borders for Amazon region
         # This is where most border issues appear
         border_buffer = 0.5  # Increased from 0.2 to 0.5 degrees (approximately 55km)
-        amazon_buffer = 1.0  # 1 degree buffer (approximately 110km) for northwest region
+        amazon_buffer = (
+            1.0  # 1 degree buffer (approximately 110km) for northwest region
+        )
 
         # Standard buffer for most of Brazil
         df = df[
-            (df['latitude'] >= (extreme_bounds['south'] + border_buffer)) &
-            (df['latitude'] <= (extreme_bounds['north'] - border_buffer)) &
-            (df['longitude'] >= (extreme_bounds['west'] + border_buffer)) &
-            (df['longitude'] <= (extreme_bounds['east'] - border_buffer))
-            ]
+            (df["latitude"] >= (extreme_bounds["south"] + border_buffer))
+            & (df["latitude"] <= (extreme_bounds["north"] - border_buffer))
+            & (df["longitude"] >= (extreme_bounds["west"] + border_buffer))
+            & (df["longitude"] <= (extreme_bounds["east"] - border_buffer))
+        ]
 
         # Extra buffer for the northwest (Amazon region near Colombia/Peru)
         # Apply this only to points in the northwest
-        northwest_region = (
-                (df['latitude'] >= 0) &
-                (df['longitude'] <= -65)
-        )
+        northwest_region = (df["latitude"] >= 0) & (df["longitude"] <= -65)
 
         # Create a mask that keeps points OUTSIDE the northwest (unchanged)
         # or that are in the northwest AND have the extra buffer
         extra_buffer_mask = ~northwest_region | (
-                northwest_region &
-                (df['longitude'] >= (extreme_bounds['west'] + amazon_buffer))
+            northwest_region
+            & (df["longitude"] >= (extreme_bounds["west"] + amazon_buffer))
         )
 
         # Apply the extra buffer
         df = df[extra_buffer_mask]
 
         # Add satellite field if missing
-        if 'satelite' not in df.columns:
-            df['satelite'] = 'RISCO_FOGO_INPE'
+        if "satelite" not in df.columns:
+            df["satelite"] = "RISCO_FOGO_INPE"
 
         # Add municipio field if missing
-        if 'municipio' not in df.columns:
-            df['municipio'] = 'Unknown'
+        if "municipio" not in df.columns:
+            df["municipio"] = "Unknown"
 
         # Add bioma field if missing
-        if 'bioma' not in df.columns:
-            df['bioma'] = 'Unknown'
+        if "bioma" not in df.columns:
+            df["bioma"] = "Unknown"
 
         # Add pais field if missing
-        if 'pais' not in df.columns:
-            df['pais'] = 'Brasil'
+        if "pais" not in df.columns:
+            df["pais"] = "Brasil"
 
         # Add is_test_data field
-        df['is_test_data'] = self.is_using_test_data
+        df["is_test_data"] = self.is_using_test_data
 
         # Calculate stats
         survivors = len(df)
@@ -493,7 +518,10 @@ class INPEFireCollector:
         self.logger.info(f"  Eliminated: {eliminated}")
 
         # Cache the cleaned data
-        cache_file = os.path.join(self.dirs['cache'], f"cached_fire_data_{datetime.now().strftime('%Y%m%d')}.csv")
+        cache_file = os.path.join(
+            self.dirs["cache"],
+            f"cached_fire_data_{datetime.now().strftime('%Y%m%d')}.csv",
+        )
         df.to_csv(cache_file, index=False)
         self.logger.info(f"Cached nuclear-clean data: {cache_file}")
 
@@ -509,14 +537,18 @@ class INPEFireCollector:
 
         try:
             # Create geometries with explicit coordinate order
-            geometry = [Point(lon, lat) for lon, lat in zip(df['longitude'], df['latitude'])]
-            gdf = gpd.GeoDataFrame(df, geometry=geometry, crs='EPSG:4326')
+            geometry = [
+                Point(lon, lat) for lon, lat in zip(df["longitude"], df["latitude"])
+            ]
+            gdf = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
 
             # Log sample coordinates for verification
             if len(gdf) > 0:
                 self.logger.info("Sample coordinates verification:")
                 for idx, row in gdf.head(3).iterrows():
-                    self.logger.info(f"  Point: Lon={row.geometry.x:.3f}, Lat={row.geometry.y:.3f}")
+                    self.logger.info(
+                        f"  Point: Lon={row.geometry.x:.3f}, Lat={row.geometry.y:.3f}"
+                    )
 
             return gdf
 
@@ -532,24 +564,32 @@ class INPEFireCollector:
 
         try:
             # Create timestamp for filenames
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
             # Save as current GeoJSON
-            current_geojson = os.path.join(self.dirs['geojson'], "current_fire_points.geojson")
-            gdf.to_file(current_geojson, driver='GeoJSON')
+            current_geojson = os.path.join(
+                self.dirs["geojson"], "current_fire_points.geojson"
+            )
+            gdf.to_file(current_geojson, driver="GeoJSON")
 
             # Save as timestamped GeoJSON
-            timestamped_geojson = os.path.join(self.dirs['geojson'], f"fire_points_{timestamp}.geojson")
-            gdf.to_file(timestamped_geojson, driver='GeoJSON')
+            timestamped_geojson = os.path.join(
+                self.dirs["geojson"], f"fire_points_{timestamp}.geojson"
+            )
+            gdf.to_file(timestamped_geojson, driver="GeoJSON")
 
             # Save as shapefile
-            shapefile = os.path.join(self.dirs['processed'], f"fire_points_{timestamp}.shp")
+            shapefile = os.path.join(
+                self.dirs["processed"], f"fire_points_{timestamp}.shp"
+            )
             gdf.to_file(shapefile)
 
             # Save as CSV
-            csv_file = os.path.join(self.dirs['processed'], f"fire_points_{timestamp}.csv")
+            csv_file = os.path.join(
+                self.dirs["processed"], f"fire_points_{timestamp}.csv"
+            )
             # Create a copy of the dataframe without the geometry column
-            df_for_csv = pd.DataFrame(gdf.drop(columns='geometry'))
+            df_for_csv = pd.DataFrame(gdf.drop(columns="geometry"))
             df_for_csv.to_csv(csv_file, index=False)
 
             self.logger.info(f"Created {len(gdf)} records")
@@ -570,7 +610,7 @@ class INPEFireCollector:
             total_count = len(gdf)
 
             # Count by state
-            state_counts = gdf['estado'].value_counts().to_dict()
+            state_counts = gdf["estado"].value_counts().to_dict()
 
             # Calculate percentages
             state_percentages = {}
@@ -579,44 +619,54 @@ class INPEFireCollector:
                 state_percentages[state] = round(percentage, 1)
 
             # Count by risk level
-            if 'risk_level' in gdf.columns:
-                risk_level_counts = gdf['risk_level'].value_counts().to_dict()
+            if "risk_level" in gdf.columns:
+                risk_level_counts = gdf["risk_level"].value_counts().to_dict()
             else:
                 risk_level_counts = {"undefined": total_count}
 
             # Create summary dictionary
             summary = {
-                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "total_fire_risk_points": total_count,
                 "states_with_fire_risk": len(state_counts),
                 "state_breakdown": {},
                 "risk_level_breakdown": risk_level_counts,
                 "_metadata": {
-                    "data_quality": "REAL-TIME" if not self.is_using_test_data else "TEST_DATA",
-                    "collection_method": "TIF_PROCESSING" if not self.is_using_test_data else "TEST_DATA_GENERATION",
+                    "data_quality": "REAL-TIME"
+                    if not self.is_using_test_data
+                    else "TEST_DATA",
+                    "collection_method": "TIF_PROCESSING"
+                    if not self.is_using_test_data
+                    else "TEST_DATA_GENERATION",
                     "source_url": self.fire_risk_url,
-                    "coordinate_validation": "ULTRA-NUCLEAR-LEVEL FILTERING APPLIED"
-                }
+                    "coordinate_validation": "ULTRA-NUCLEAR-LEVEL FILTERING APPLIED",
+                },
             }
 
             # Add state breakdown with counts and percentages
-            for state in sorted(state_counts.keys(), key=lambda x: state_counts[x], reverse=True):
+            for state in sorted(
+                state_counts.keys(), key=lambda x: state_counts[x], reverse=True
+            ):
                 state_name = self.states.get(state, state)
                 summary["state_breakdown"][state] = {
                     "name": state_name,
                     "count": state_counts[state],
-                    "percentage": state_percentages[state]
+                    "percentage": state_percentages[state],
                 }
 
             # Save the summary as JSON
-            summary_file = os.path.join(self.dirs['summaries'], "current_summaries.json")
-            with open(summary_file, 'w') as f:
+            summary_file = os.path.join(
+                self.dirs["summaries"], "current_summaries.json"
+            )
+            with open(summary_file, "w") as f:
                 json.dump(summary, f, indent=2)
 
             # Also save timestamped version
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            timestamped_summary = os.path.join(self.dirs['summaries'], f"fire_summary_{timestamp}.json")
-            with open(timestamped_summary, 'w') as f:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamped_summary = os.path.join(
+                self.dirs["summaries"], f"fire_summary_{timestamp}.json"
+            )
+            with open(timestamped_summary, "w") as f:
                 json.dump(summary, f, indent=2)
 
             return summary
@@ -627,7 +677,9 @@ class INPEFireCollector:
 
     def generate_test_data(self):
         """Generate realistic test data when API endpoints are unavailable"""
-        self.logger.warning("Generating ULTRA-SAFE test data for Brazil - COMPLETELY INLAND VERSION")
+        self.logger.warning(
+            "Generating ULTRA-SAFE test data for Brazil - COMPLETELY INLAND VERSION"
+        )
 
         # Set test data flag
         self.is_using_test_data = True
@@ -645,36 +697,32 @@ class INPEFireCollector:
         # These regions are very conservative and deep inland
         safe_regions = {
             # Central Amazon (well away from borders)
-            'Central_Amazon': {'lat': (-4.5, -3.5), 'lon': (-59, -58)},
-
+            "Central_Amazon": {"lat": (-4.5, -3.5), "lon": (-59, -58)},
             # Brasília and surroundings (deep interior)
-            'Brasilia': {'lat': (-16, -15.5), 'lon': (-48, -47.5)},
-
+            "Brasilia": {"lat": (-16, -15.5), "lon": (-48, -47.5)},
             # Interior of Bahia (away from coast)
-            'Bahia_Interior': {'lat': (-12.5, -12), 'lon': (-43, -42.5)},
-
+            "Bahia_Interior": {"lat": (-12.5, -12), "lon": (-43, -42.5)},
             # Interior of São Paulo state (away from coast)
-            'Sao_Paulo_Interior': {'lat': (-22.5, -22), 'lon': (-48, -47.5)},
-
+            "Sao_Paulo_Interior": {"lat": (-22.5, -22), "lon": (-48, -47.5)},
             # Interior of Paraná (away from coast)
-            'Parana_Interior': {'lat': (-25.5, -25), 'lon': (-52, -51.5)}
+            "Parana_Interior": {"lat": (-25.5, -25), "lon": (-52, -51.5)},
         }
 
         # Distribution of points across regions (sum = num_points)
         region_distribution = {
-            'Central_Amazon': 4,
-            'Brasilia': 4,
-            'Bahia_Interior': 4,
-            'Sao_Paulo_Interior': 4,
-            'Parana_Interior': 4
+            "Central_Amazon": 4,
+            "Brasilia": 4,
+            "Bahia_Interior": 4,
+            "Sao_Paulo_Interior": 4,
+            "Parana_Interior": 4,
         }
 
         # Risk levels
-        risk_levels = ['high', 'moderate']
+        risk_levels = ["high", "moderate"]
         risk_weights = [0.6, 0.4]  # 60% high, 40% moderate
 
         # Current date and time
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Generate points for each safe region
         for region_name, count in region_distribution.items():
@@ -682,33 +730,43 @@ class INPEFireCollector:
 
             for i in range(count):
                 # Generate random coordinates within the safe region
-                lat = np.random.uniform(region_coords['lat'][0], region_coords['lat'][1])
-                lon = np.random.uniform(region_coords['lon'][0], region_coords['lon'][1])
+                lat = np.random.uniform(
+                    region_coords["lat"][0], region_coords["lat"][1]
+                )
+                lon = np.random.uniform(
+                    region_coords["lon"][0], region_coords["lon"][1]
+                )
 
                 # Choose a risk level
                 risk_level = np.random.choice(risk_levels, p=risk_weights)
 
                 # Assign a state based on coordinates (simplified)
-                state = 'AM' if region_name == 'Central_Amazon' else \
-                    'DF' if region_name == 'Brasilia' else \
-                        'BA' if region_name == 'Bahia_Interior' else \
-                            'SP' if region_name == 'Sao_Paulo_Interior' else \
-                                'PR'
+                state = (
+                    "AM"
+                    if region_name == "Central_Amazon"
+                    else "DF"
+                    if region_name == "Brasilia"
+                    else "BA"
+                    if region_name == "Bahia_Interior"
+                    else "SP"
+                    if region_name == "Sao_Paulo_Interior"
+                    else "PR"
+                )
 
                 # Create the test point
                 point = {
-                    'latitude': lat,
-                    'longitude': lon,
-                    'estado': state,
-                    'data_hora': current_time,
-                    'satelite': 'TEST_SATELLITE',
-                    'municipio': f'Test_{state}',
-                    'pais': 'Brasil',
-                    'bioma': 'Test',
-                    'risk_level': risk_level,
-                    'risk_value': 0.7 if risk_level == 'high' else 0.5,
-                    'collection_time': current_time,
-                    'is_test_data': True
+                    "latitude": lat,
+                    "longitude": lon,
+                    "estado": state,
+                    "data_hora": current_time,
+                    "satelite": "TEST_SATELLITE",
+                    "municipio": f"Test_{state}",
+                    "pais": "Brasil",
+                    "bioma": "Test",
+                    "risk_level": risk_level,
+                    "risk_value": 0.7 if risk_level == "high" else 0.5,
+                    "collection_time": current_time,
+                    "is_test_data": True,
                 }
 
                 test_points.append(point)
@@ -717,13 +775,18 @@ class INPEFireCollector:
         df = pd.DataFrame(test_points)
 
         # Log the generated points
-        self.logger.info(f"Generated {len(df)} test points in ultra-safe inland regions of Brazil")
+        self.logger.info(
+            f"Generated {len(df)} test points in ultra-safe inland regions of Brazil"
+        )
         for region, count in region_distribution.items():
             self.logger.info(f"  {region}: {count} points")
             self.logger.info(f"  {region}: {count} points")
 
         # Save test data to cache
-        cache_file = os.path.join(self.dirs['cache'], f"cached_fire_data_{datetime.now().strftime('%Y%m%d')}.csv")
+        cache_file = os.path.join(
+            self.dirs["cache"],
+            f"cached_fire_data_{datetime.now().strftime('%Y%m%d')}.csv",
+        )
         df.to_csv(cache_file, index=False)
         self.logger.info(f"Cached test data: {cache_file}")
 
@@ -756,6 +819,10 @@ class INPEFireCollector:
             print(f"Success: {results['success']}")
             print(f"Points collected: {len(results['geodataframe'])}")
             print(f"Using test data: {results['is_test_data']}")
-            print(f"States with fire risk: {results['summary'].get('states_with_fire_risk', 0)}")
+            print(
+                f"States with fire risk: {results['summary'].get('states_with_fire_risk', 0)}"
+            )
 
-            print("\nCollection complete! Data is available in the inpe_data directory.")
+            print(
+                "\nCollection complete! Data is available in the inpe_data directory."
+            )

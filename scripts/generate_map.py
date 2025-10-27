@@ -12,10 +12,14 @@ import sys
 # The script will automatically find your project's main folder
 current_script_path = os.path.abspath(__file__)  # Get the path of this script
 scripts_folder = os.path.dirname(current_script_path)  # Get the scripts folder
-PROJECT_DIR = os.path.dirname(scripts_folder)  # Go up one level to the main project folder
+PROJECT_DIR = os.path.dirname(
+    scripts_folder
+)  # Go up one level to the main project folder
 
 # Define where to find and save data
-RAW_DATA_DIR = os.path.join(PROJECT_DIR, "project_data")  # Where your raw data is stored
+RAW_DATA_DIR = os.path.join(
+    PROJECT_DIR, "project_data"
+)  # Where your raw data is stored
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "processed_data")  # Where to save processed data
 TEMP_DIR = os.path.join(PROJECT_DIR, "temp")  # For temporary files
 
@@ -26,6 +30,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # STEP 2: DEFINE PROCESSING FUNCTIONS
 # Each function handles one dataset
+
 
 def process_iphan_data():
     """Process IPHAN heritage site data"""
@@ -108,8 +113,10 @@ def process_inpe_data():
         collector = INPEFireCollector(base_dir=RAW_DATA_DIR)
         results = collector.run(days=1)
 
-        if results['success']:
-            print(f"  INPE collector successfully retrieved {len(results['geodataframe'])} fire points")
+        if results["success"]:
+            print(
+                f"  INPE collector successfully retrieved {len(results['geodataframe'])} fire points"
+            )
 
             # Copy the latest fire data files to the output directory
             geojson_dir = os.path.join(inpe_dir, "geojson")
@@ -117,7 +124,9 @@ def process_inpe_data():
                 # Copy GeoJSON for web mapping
                 geojson_path = os.path.join(geojson_dir, "current_fire_points.geojson")
                 if os.path.exists(geojson_path):
-                    dest_geojson = os.path.join(output_dir, "current_fire_points.geojson")
+                    dest_geojson = os.path.join(
+                        output_dir, "current_fire_points.geojson"
+                    )
                     shutil.copy2(geojson_path, dest_geojson)
                     print(f"  Copied current fire points GeoJSON to output directory")
 
@@ -125,12 +134,17 @@ def process_inpe_data():
                 processed_dir = os.path.join(inpe_dir, "processed")
                 if os.path.exists(processed_dir):
                     shp_files = sorted(
-                        [f for f in os.listdir(processed_dir) if f.endswith('.shp') and f.startswith('fire_points_')],
-                        reverse=True)
+                        [
+                            f
+                            for f in os.listdir(processed_dir)
+                            if f.endswith(".shp") and f.startswith("fire_points_")
+                        ],
+                        reverse=True,
+                    )
                     if shp_files:
                         latest_shp = shp_files[0]
                         base_name = os.path.splitext(latest_shp)[0]
-                        for ext in ['.shp', '.shx', '.dbf', '.prj', '.cpg']:
+                        for ext in [".shp", ".shx", ".dbf", ".prj", ".cpg"]:
                             src = os.path.join(processed_dir, f"{base_name}{ext}")
                             if os.path.exists(src):
                                 dest = os.path.join(output_dir, f"{base_name}{ext}")
@@ -146,7 +160,9 @@ def process_inpe_data():
                         shutil.copy2(summary_path, dest_summary)
                         print(f"  Copied fire summary to output directory")
 
-                data_quality = "REAL-TIME" if not results.get('is_test_data', False) else "TEST"
+                data_quality = (
+                    "REAL-TIME" if not results.get("is_test_data", False) else "TEST"
+                )
                 print(f"  Successfully processed INPE fire data ({data_quality} DATA)")
                 return True
             else:
@@ -165,7 +181,9 @@ def process_inpe_data():
         if os.path.exists(processed_dir):
             file_count = 0
             for filename in os.listdir(processed_dir):
-                if filename.startswith("fire_") and filename.endswith((".shp", ".shx", ".dbf", ".prj", ".cpg")):
+                if filename.startswith("fire_") and filename.endswith(
+                    (".shp", ".shx", ".dbf", ".prj", ".cpg")
+                ):
                     source = os.path.join(processed_dir, filename)
                     destination = os.path.join(output_dir, filename)
                     shutil.copy2(source, destination)
@@ -173,7 +191,9 @@ def process_inpe_data():
                     file_count += 1
 
             if file_count > 0:
-                print(f"  Successfully processed {file_count} INPE files (FALLBACK METHOD)")
+                print(
+                    f"  Successfully processed {file_count} INPE files (FALLBACK METHOD)"
+                )
                 return True
             else:
                 print("  WARNING: No fire data files found in the processed folder")
@@ -224,7 +244,7 @@ def process_ibge_data():
 
     # Look for state boundary files
     state_files_found = 0
-    state_base_name = "BR_UF_2022"
+    state_base_name = "BR_UF_2024"
 
     # Check for files in the main project_data folder
     for extension in [".shp", ".shx", ".dbf", ".prj", ".cpg"]:
@@ -253,10 +273,12 @@ def create_summary_report():
     inpe_summary_path = os.path.join(OUTPUT_DIR, "inpe", "fire_summary.json")
     if os.path.exists(inpe_summary_path):
         try:
-            with open(inpe_summary_path, 'r') as f:
+            with open(inpe_summary_path, "r") as f:
                 inpe_summary = json.load(f)
                 if "_metadata" in inpe_summary:
-                    inpe_data_quality = inpe_summary["_metadata"].get("data_quality", "UNKNOWN")
+                    inpe_data_quality = inpe_summary["_metadata"].get(
+                        "data_quality", "UNKNOWN"
+                    )
         except:
             pass
 
@@ -266,35 +288,40 @@ def create_summary_report():
         "processed_datasets": {
             "iphan": {
                 "status": os.path.exists(os.path.join(OUTPUT_DIR, "iphan")),
-                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "iphan"))] if os.path.exists(
-                    os.path.join(OUTPUT_DIR, "iphan")) else []
+                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "iphan"))]
+                if os.path.exists(os.path.join(OUTPUT_DIR, "iphan"))
+                else [],
             },
             "cemaden": {
                 "status": os.path.exists(os.path.join(OUTPUT_DIR, "cemaden")),
-                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "cemaden"))] if os.path.exists(
-                    os.path.join(OUTPUT_DIR, "cemaden")) else []
+                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "cemaden"))]
+                if os.path.exists(os.path.join(OUTPUT_DIR, "cemaden"))
+                else [],
             },
             "inpe": {
                 "status": os.path.exists(os.path.join(OUTPUT_DIR, "inpe")),
-                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "inpe"))] if os.path.exists(
-                    os.path.join(OUTPUT_DIR, "inpe")) else [],
-                "data_quality": inpe_data_quality
+                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "inpe"))]
+                if os.path.exists(os.path.join(OUTPUT_DIR, "inpe"))
+                else [],
+                "data_quality": inpe_data_quality,
             },
             "snisb": {
                 "status": os.path.exists(os.path.join(OUTPUT_DIR, "snisb")),
-                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "snisb"))] if os.path.exists(
-                    os.path.join(OUTPUT_DIR, "snisb")) else []
+                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "snisb"))]
+                if os.path.exists(os.path.join(OUTPUT_DIR, "snisb"))
+                else [],
             },
             "ibge": {
                 "status": os.path.exists(os.path.join(OUTPUT_DIR, "ibge")),
-                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "ibge"))] if os.path.exists(
-                    os.path.join(OUTPUT_DIR, "ibge")) else []
-            }
+                "files": [f for f in os.listdir(os.path.join(OUTPUT_DIR, "ibge"))]
+                if os.path.exists(os.path.join(OUTPUT_DIR, "ibge"))
+                else [],
+            },
         },
         "notes": "This report shows which datasets were successfully processed. "
-                 "The next step is to create a QGIS project using these datasets.",
+        "The next step is to create a QGIS project using these datasets.",
         "pipeline_version": "1.2",
-        "last_update": "July 14, 2025"
+        "last_update": "July 14, 2025",
     }
 
     # Save the report
@@ -348,3 +375,4 @@ def main():
 # This line makes the script run when you execute it
 if __name__ == "__main__":
     main()
+
