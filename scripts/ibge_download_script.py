@@ -14,11 +14,13 @@ def download_file(url, output_path):
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
-        total_size = int(response.headers.get('content-length', 0))
+        total_size = int(response.headers.get("content-length", 0))
         block_size = 8192
 
-        with open(output_path, 'wb') as f:
-            with tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading") as pbar:
+        with open(output_path, "wb") as f:
+            with tqdm(
+                total=total_size, unit="B", unit_scale=True, desc="Downloading"
+            ) as pbar:
                 for chunk in response.iter_content(chunk_size=block_size):
                     if chunk:
                         f.write(chunk)
@@ -32,7 +34,11 @@ def download_file(url, output_path):
 def get_ibge_states():
     """Download and extract IBGE state boundaries"""
     # Updated working URL as of July 2024
-    url = "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2022/Brasil/BR/BR_UF_2022.zip"
+    url = "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/Brasil/BR_Municipios_2024.zip"
+    base_dir = os.path.join(os.getcwd(), "processed_data")
+    ibge_dir = os.path.join(base_dir, "ibge")
+    print(base_dir)
+    print(ibge_dir)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         zip_path = os.path.join(temp_dir, "BR_UF_2022.zip")
@@ -44,20 +50,23 @@ def get_ibge_states():
             try:
                 states = gpd.read_file(alt_url)
                 print("Successfully loaded from GitHub alternative source")
-                return states[['sigla', 'geometry']].rename(columns={'sigla': 'state_code'})
+                return states[["sigla", "geometry"]].rename(
+                    columns={"sigla": "state_code"}
+                )
             except Exception as e:
                 print(f"Failed to use alternative source: {e}")
                 sys.exit(1)
 
         try:
-            with ZipFile(zip_path, 'r') as zip_ref:
+            with ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(ibge_dir)
                 zip_ref.extractall(temp_dir)
 
             # Find the shapefile
             shp_file = None
             for root, _, files in os.walk(temp_dir):
                 for file in files:
-                    if file.endswith('.shp'):
+                    if file.endswith(".shp"):
                         shp_file = os.path.join(root, file)
                         print(f"Found shapefile: {shp_file}")
                         break
@@ -70,10 +79,14 @@ def get_ibge_states():
 
             states = gpd.read_file(shp_file)
             # Handle different column names
-            if 'SIGLA_UF' in states.columns:
-                return states[['SIGLA_UF', 'geometry']].rename(columns={'SIGLA_UF': 'state_code'})
-            elif 'sigla' in states.columns:
-                return states[['sigla', 'geometry']].rename(columns={'sigla': 'state_code'})
+            if "SIGLA_UF" in states.columns:
+                return states[["SIGLA_UF", "geometry"]].rename(
+                    columns={"SIGLA_UF": "state_code"}
+                )
+            elif "sigla" in states.columns:
+                return states[["sigla", "geometry"]].rename(
+                    columns={"sigla": "state_code"}
+                )
             else:
                 print("Error: Could not find state code column in shapefile")
                 sys.exit(1)
@@ -92,9 +105,24 @@ def main():
 
     # 2. Load IPHAN data with flexible path handling
     iphan_paths = [
-        os.path.join("project_data", "iphan", "filtered_data", "filtered_SICG_bem_poligono.gpkg"),
-        os.path.join("..", "project_data", "iphan", "filtered_data", "filtered_SICG_bem_poligono.gpkg"),
-        os.path.join("D:", "IPHAN_project", "project_data", "iphan", "filtered_data", "filtered_SICG_bem_poligono.gpkg")
+        os.path.join(
+            "project_data", "iphan", "filtered_data", "filtered_SICG_bem_poligono.gpkg"
+        ),
+        os.path.join(
+            "..",
+            "project_data",
+            "iphan",
+            "filtered_data",
+            "filtered_SICG_bem_poligono.gpkg",
+        ),
+        os.path.join(
+            "D:",
+            "IPHAN_project",
+            "project_data",
+            "iphan",
+            "filtered_data",
+            "filtered_SICG_bem_poligono.gpkg",
+        ),
     ]
 
     iphan_data = None
@@ -129,12 +157,7 @@ def main():
 
     # 4. Spatial join
     print("\nPerforming spatial join...")
-    result = gpd.sjoin(
-        iphan_data,
-        states,
-        how='left',
-        predicate='within'
-    )
+    result = gpd.sjoin(iphan_data, states, how="left", predicate="within")
 
     # 5. Save results
     output_dir = os.path.join("project_data", "output_results")
@@ -146,7 +169,7 @@ def main():
         result.to_file(output_path, driver="GPKG")
 
         # Report results
-        matched = len(result[~result['state_code'].isna()])
+        matched = len(result[~result["state_code"].isna()])
         total = len(result)
 
         print("\n========================================")
@@ -162,7 +185,7 @@ def main():
 
             # Save unmatched features
             unmatched_path = os.path.join(output_dir, "unmatched_features.gpkg")
-            result[result['state_code'].isna()].to_file(unmatched_path, driver="GPKG")
+            result[result["state_code"].isna()].to_file(unmatched_path, driver="GPKG")
             print(f"Unmatched features saved to: {unmatched_path}")
 
         print("\nScript finished successfully!")

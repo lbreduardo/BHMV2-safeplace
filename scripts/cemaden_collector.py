@@ -22,29 +22,34 @@ class CemadenScraper:
         self.base_url = base_url
         self.session = requests.Session()
 
-        # Create project_data folder if it doesn't exist
-        # Get script directory and go up to project root
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
 
-        # Create cemaden folder in project_data
         self.project_data_dir = os.path.join(project_root, "project_data", "cemaden")
 
+        os.makedirs(self.project_data_dir, exist_ok=True)
 
-        # Setup logging
+        log_file = os.path.join(self.project_data_dir, 'cemaden_scraper.log')
+
+        if not os.path.exists(log_file):
+            open(log_file, 'a').close()
+
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(os.path.join(self.project_data_dir, 'cemaden_scraper.log')),
+                logging.FileHandler(log_file),
                 logging.StreamHandler()
             ]
         )
         self.logger = logging.getLogger(__name__)
 
-        # User agent to avoid blocking
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/91.0.4472.124 Safari/537.36'
+            )
         }
         self.session.headers.update(self.headers)
 
